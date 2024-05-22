@@ -9,10 +9,18 @@ from catboost import CatBoostClassifier, Pool
 import shap
 import matplotlib.pyplot as plt
 from sklearn.model_selection import learning_curve
+import requests
+from io import StringIO
 
-# Chargement des données
-data_m = pd.read_csv(r"C:\Users\amous\Developpez_Preuve-concept\data_M.csv")
+# URL du fichier CSV sur GitHub
+github_url = 'https://raw.githubusercontent.com/Githubsamson88/Credit-analysis/main/data_M.csv'
 
+# Téléchargement du fichier CSV depuis GitHub
+response = requests.get(github_url)
+
+# Lecture du contenu du fichier CSV
+data_m = pd.read_csv(StringIO(response.text))
+    
 # Encodage des variables booléennes
 bool_columns = data_m.select_dtypes(include=['bool']).columns
 data_m[bool_columns] = data_m[bool_columns].astype(int)
