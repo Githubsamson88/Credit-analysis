@@ -92,12 +92,16 @@ explainer = shap.TreeExplainer(model)
 shap_values = explainer.shap_values(X_train)
 shap_values_exp = shap.Explanation(values=shap_values, base_values=explainer.expected_value, data=X_train)
 
-# Affichage des graphiques SHAP
+# Affichage du plot SHAP Summary
 st.write("## SHAP Summary Plot")
-shap.summary_plot(shap_values, X_train)
-st.pyplot(bbox_inches='tight')
-plt.clf()
+fig_summary, ax_summary = plt.subplots()
+shap.summary_plot(shap_values, X_train, show=False)
+st.pyplot(fig_summary)
 
+# Nettoyage de la figure
+plt.close(fig_summary)
+
+# Affichage du plot SHAP Waterfall
 st.write("## SHAP Waterfall Plot")
 shap.waterfall_plot(shap_values_exp[0])
 st.pyplot(bbox_inches='tight')
