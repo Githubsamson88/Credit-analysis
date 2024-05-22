@@ -8,6 +8,7 @@ from catboost import CatBoostClassifier, Pool
 import shap
 import requests
 from io import StringIO
+import matplotlib.pyplot as plt  # Importation de matplotlib
 
 # URL du fichier CSV sur GitHub
 github_url = 'https://raw.githubusercontent.com/Githubsamson88/Credit-analysis/main/data_M.csv'
@@ -81,18 +82,65 @@ st.write(f"Moyenne des scores de validation croisée AUC : {cv_scores.mean():.4f
 feature_importances = model.get_feature_importance(Pool(X_train, y_train, cat_features=categorical_features_indices))
 feature_names = X.columns
 
-# Affichage des importances des caractéristiques dans la console
-st.write("Importances des caractéristiques :")
+# Affichage des importances des caractéristiques
 for feature_name, importance in zip(feature_names, feature_importances):
     st.write(f"{feature_name}: {importance}")
 
-# Création de l'explicateur SHAP pour CatBoost
+# Calcul des valeurs SHAP pour le modèle CatBoost
 explainer = shap.TreeExplainer(model)
 shap_values = explainer.shap_values(X_train)
 shap_values_exp = shap.Explanation(values=shap_values, base_values=explainer.expected_value, data=X_train)
 
-# Affichage des plots SHAP dans la console
-st.write("SHAP Summary Plot :")
+# Création d'une nouvelle figure avant d'appeler shap.summary_plot
+plt.figure()
 shap.summary_plot(shap_values, X_train)
-st.write("SHAP Waterfall Plot :")
+st.pyplot(bbox_inches='tight')
+plt.clf()
+# Affichage du plot SHAP Waterfall
+st.write("## SHAP Waterfall Plot")
 shap.waterfall_plot(shap_values_exp[0])
+st.pyplot(bbox_inches='tight')
+plt.clf()
+
+# Fonction pour tracer la courbe d'apprentissage
+def plot_learning_curve(estimator, X, y, cv=5):
+    train_sizes, train_scores, test_scores = learning_curve(
+        estimator, X, y, train_sizes=np.linspace(.1, 1.0, 5), cv=cv, scoring='accuracy', n_jobs=-1)
+
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    test_scores_mean = np.mean(test_scores, axis=1)
+    test_scores_std = np.std(test_scores, axis=1)
+
+    plt.figure(figsize=(10, 6))
+    plt.fill_between(train_sizes, train_scores_mean - train_scores_std,
+                     train_scores_mean + train_scores_std, alpha=0.1, color="r")
+    plt.fill_between(train_sizes, test_scores_mean - test_scores_std,
+                     test_scores_mean + test_scores_std, alpha=0.1, color="g")
+    plt.plot(train_sizes, train_scores_mean, 'o-', color="r",
+             label="Training score")
+    plt.plot(train_sizes, test_scores_mean, 'o-', color="g",
+             label="Cross-validation score")
+    plt.xlabel("Training examples")
+    plt.ylabel("Score")
+    plt.legend(loc="best")
+    plt.title("Learning Curve")
+    plt.show()
+
+st.write("## Courbe d'apprentissage")
+plot_learning_curve(model, X, y, cv=5)
+st.pyplot(bbox_inches='tight')
+plt.clf()
+
+# Tracer la courbe ROC
+fpr, tpr, thresholds = roc_curve(y_test, y_probs)
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, color='blue', label='ROC Curve (AUC = %0.2f)' % auc)
+plt.plot([0, 1], [0, 1], color='red', linestyle='--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend()
+plt.show()
+st.pyplot(bbox_inches='tight')
+plt.clf()
