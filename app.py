@@ -103,7 +103,8 @@ plt.close(fig_summary)
 
 # Affichage du plot SHAP Waterfall
 st.write("## SHAP Waterfall Plot")
-shap.waterfall_plot(shap_values_exp[0], show=False)
+shap.waterfall_plot(shap_values_exp[0])
+
 st.pyplot()
 
 # Fonction pour tracer la courbe d'apprentissage
