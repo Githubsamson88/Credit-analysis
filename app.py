@@ -8,7 +8,7 @@ from catboost import CatBoostClassifier, Pool
 import shap
 import requests
 from io import StringIO
-import matplotlib.pyplot as plt  # Importation de matplotlib
+import matplotlib.pyplot as plt
 
 # URL du fichier CSV sur GitHub
 github_url = 'https://raw.githubusercontent.com/Githubsamson88/Credit-analysis/main/data_M.csv'
@@ -103,9 +103,8 @@ plt.close(fig_summary)
 
 # Affichage du plot SHAP Waterfall
 st.write("## SHAP Waterfall Plot")
-shap.waterfall_plot(shap_values_exp[0])
-st.pyplot(bbox_inches='tight')
-plt.clf()
+shap.waterfall_plot(shap_values_exp[0], show=False)
+st.pyplot()
 
 # Fonction pour tracer la courbe d'apprentissage
 def plot_learning_curve(estimator, X, y, cv=5):
