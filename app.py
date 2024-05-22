@@ -95,7 +95,7 @@ shap_values_exp = shap.Explanation(values=shap_values, base_values=explainer.exp
 # Affichage du plot SHAP Summary
 st.write("## SHAP Summary Plot")
 fig_summary, ax_summary = plt.subplots()
-shap.summary_plot(shap_values, X_train, show=False)
+shap.summary_plot(shap_values, X_train, plot_type='bar', show=False)
 st.pyplot(fig_summary)
 
 # Nettoyage de la figure
