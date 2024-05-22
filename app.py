@@ -86,17 +86,18 @@ feature_names = X.columns
 for feature_name, importance in zip(feature_names, feature_importances):
     st.write(f"{feature_name}: {importance}")
 
+
 # Calcul des valeurs SHAP pour le modèle CatBoost
 explainer = shap.TreeExplainer(model)
 shap_values = explainer.shap_values(X_train)
 shap_values_exp = shap.Explanation(values=shap_values, base_values=explainer.expected_value, data=X_train)
 
-# Création d'une nouvelle figure avant d'appeler shap.summary_plot
-plt.figure()
+# Affichage des graphiques SHAP
+st.write("## SHAP Summary Plot")
 shap.summary_plot(shap_values, X_train)
 st.pyplot(bbox_inches='tight')
 plt.clf()
-# Affichage du plot SHAP Waterfall
+
 st.write("## SHAP Waterfall Plot")
 shap.waterfall_plot(shap_values_exp[0])
 st.pyplot(bbox_inches='tight')
