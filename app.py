@@ -79,14 +79,6 @@ cv_scores = cross_val_score(model, X, y, cv=5, scoring='roc_auc')
 st.write(f"Validation croisée AUC scores : {cv_scores}")
 st.write(f"Moyenne des scores de validation croisée AUC : {cv_scores.mean():.4f}")
 
-# Importance des caractéristiques
-feature_importances = model.get_feature_importance(Pool(X_train, y_train, cat_features=categorical_features_indices))
-feature_names = X.columns
-
-# Affichage des importances des caractéristiques
-for feature_name, importance in zip(feature_names, feature_importances):
-    st.write(f"{feature_name}: {importance}")
-
 
 # Calcul des valeurs SHAP pour le modèle CatBoost
 explainer = shap.TreeExplainer(model)
