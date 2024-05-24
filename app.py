@@ -1,3 +1,4 @@
+import warnings
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -10,6 +11,9 @@ import shap
 import requests
 from io import StringIO
 import matplotlib.pyplot as plt
+
+# Ignorer les avertissements PyplotGlobalUseWarning
+warnings.filterwarnings("ignore", category=UserWarning, message="Matplotlib is currently using agg")
 
 # URL du fichier CSV sur GitHub
 github_url = 'https://raw.githubusercontent.com/Githubsamson88/Credit-analysis/main/data_M.csv'
@@ -73,11 +77,6 @@ y_probs = model.predict_proba(X_test)[:, 1]
 # Évaluation des performances du modèle
 auc = roc_auc_score(y_test, y_probs)
 st.write(f"Score AUC : {auc:.4f}")
-
-# Validation croisée
-cv_scores = cross_val_score(model, X, y, cv=5, scoring='roc_auc')
-st.write(f"Validation croisée AUC scores : {cv_scores}")
-st.write(f"Moyenne des scores de validation croisée AUC : {cv_scores.mean():.4f}")
 
 
 # Calcul des valeurs SHAP pour le modèle CatBoost
