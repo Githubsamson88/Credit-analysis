@@ -4,19 +4,15 @@ matplotlib.use('Agg')  # Configuration du backend non interactif pour Matplotlib
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import learning_curve
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.metrics import accuracy_score, roc_auc_score, roc_curve, jaccard_score, hamming_loss
+from sklearn.metrics import accuracy_score, roc_auc_score, roc_curve, jaccard_score, hamming_loss, classification_report
 from catboost import CatBoostClassifier, Pool
+from ngboost import NGBClassifier
 import shap
 import requests
 from io import StringIO
 import matplotlib.pyplot as plt
-from ngboost import NGBClassifier  # Ajout de cette ligne
-
-# Ignorer les avertissements PyplotGlobalUseWarning
-warnings.filterwarnings("ignore", category=UserWarning, message="Matplotlib is currently using agg")
 
 # Ignorer les avertissements PyplotGlobalUseWarning
 warnings.filterwarnings("ignore", category=UserWarning, message="Matplotlib is currently using agg")
@@ -54,6 +50,28 @@ for col in categorical_columns:
 # Suppression des valeurs manquantes
 data = data.dropna()
 
+# visualisation
+# Visualisation 1 : data['annual_inc'].plot()
+st.write("Visualisation 1 : Revenu annuel")
+st.line_chart(data['annual_inc'])
+
+# Visualisation 2 : Répartition des modalités de loan_status
+st.write("Visualisation 2 : Répartition des modalités de loan_status")
+total_samples = data.shape[0]
+loan_status_percentages = data['loan_status'].value_counts(normalize=True) * 100
+plt.figure(figsize=(8, 6))
+loan_status_percentages.plot(kind='bar', color=['blue', 'orange'])
+plt.title('Répartition des modalités de loan_status')
+plt.xlabel('loan_status')
+plt.ylabel('Pourcentage')
+plt.xticks(rotation=0)
+for i, percentage in enumerate(loan_status_percentages):
+    plt.text(i, percentage + 1, f'{percentage:.2f}%', ha='center')
+
+plt.show()
+st.pyplot()
+
+
 # Encodage de loan_status
 label_encoder = LabelEncoder()
 data['loan_status'] = label_encoder.fit_transform(data['loan_status'])
@@ -79,6 +97,7 @@ model_ngboost.fit(X_train, y_train)
 
 # Prédiction sur l'ensemble de test
 y_pred_ngboost = model_ngboost.predict(X_test)
+y_pred_proba_ngboost = model_ngboost.predict_proba(X_test)[:, 1]
 
 # Calcul des métriques
 accuracy_ngboost = accuracy_score(y_test, y_pred_ngboost)
@@ -91,22 +110,43 @@ st.write("Accuracy :", accuracy_ngboost)
 st.write("Jaccard Score :", jaccard_ngboost)
 st.write("Hamming Loss :", hamming_ngboost)
 
-# Visualisation 1 : data['annual_inc'].plot()
-st.write("Visualisation 1 : Revenu annuel")
-st.line_chart(data['annual_inc'])
 
-# Visualisation 2 : Répartition des modalités de loan_status
-st.write("Visualisation 2 : Répartition des modalités de loan_status")
-total_samples = data.shape[0]
-loan_status_percentages = data['loan_status'].value_counts(normalize=True) * 100
+# Évaluation du modèle
+st.write("Évaluation du modèle :")
+st.write(classification_report(y_test, y_pred_ngboost))
+roc_auc = roc_auc_score(y_test, y_pred_proba_ngboost)
+st.write(f'ROC AUC Score: {roc_auc}')
+
+# Obtention des importances des caractéristiques
+feature_importances = model_ngboost.feature_importances_
+feature_importances = feature_importances.ravel()  # ou feature_importances.flatten()
+features = X_train.columns
+coefficients_df = pd.DataFrame({'Feature': features, 'Importance': feature_importances})
+intercept_df = pd.DataFrame({'Feature': ['Intercept'], 'Importance': [model_ngboost.score(X_train, y_train)]})
+coefficients_df = pd.concat([coefficients_df, intercept_df], ignore_index=True)
+st.write(coefficients_df)
+
+# Visualisation avec SHAP
+explainer = shap.TreeExplainer(model_ngboost)
+shap_values = explainer.shap_values(X_test)
+shap.initjs()
+shap.force_plot(explainer.expected_value, shap_values[0], X_test.iloc[0, :])
+
+# Courbe ROC
+fpr, tpr, _ = roc_curve(y_test, y_pred_proba_ngboost)
+roc_auc = auc(fpr, tpr)
 plt.figure(figsize=(8, 6))
-loan_status_percentages.plot(kind='bar', color=['blue', 'orange'])
-plt.title('Répartition des modalités de loan_status')
-plt.xlabel('loan_status')
-plt.ylabel('Pourcentage')
-plt.xticks(rotation=0)
-for i, percentage in enumerate(loan_status_percentages):
-    plt.text(i, percentage + 1, f'{percentage:.2f}%', ha='center')
-
+plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc="lower right")
 plt.show()
 st.pyplot()
+
+# Déploiement sur Streamlit Sharing
+if __name__ == '__main__':
+    st.write("Modèle NGBoost prêt à l'emploi !")
