@@ -27,7 +27,7 @@ response = requests.get(github_url)
 data = pd.read_csv(StringIO(response.text))
 
 # Suppression de la colonne 'last_pymnt_d'
-data.drop('last_pymnt_d', axis=1, inplace=True)
+#data.drop('last_pymnt_d', axis=1, inplace=True)
 
 # Encodage des variables booléennes
 bool_columns = data.select_dtypes(include=['bool']).columns
