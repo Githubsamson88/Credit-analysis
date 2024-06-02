@@ -124,20 +124,22 @@ st.write("Hamming Loss :", hamming_ngboost)
 selected_zip_code = st.selectbox("Sélectionnez un code postal", data['zip_code'].unique())
 
 # Probabilités prédites pour le code postal sélectionné
-if st.button("Afficher les probabilités")
+if st.button("Afficher les probabilités"):
+    # Sélection du code postal
+    selected_zip_code = st.selectbox("Sélectionnez un code postal", data['zip_code'].unique())
 
-  # Extraction des données pour le code postal sélectionné
-    selected_data = data[data['zip_code'] == selected_zip_code]
+    # Filtrer les données pour le code postal sélectionné
+    filtered_data = data[data['zip_code'] == selected_zip_code]
 
-    # Préparation des données pour la prédiction
-    X_selected = selected_data.drop('loan_status', axis=1)
+    # Sélection des caractéristiques
+    X_selected = filtered_data.drop('loan_status', axis=1)
 
-    # Prédiction des probabilités
-    y_pred_proba_selected = model_ngboost.predict_proba(X_selected)[:, 1]
+    # Prédiction des probabilités pour le code postal sélectionné
+    predicted_probabilities = model_ngboost.predict_proba(X_selected)[:, 1]
 
-    # Affichage des probabilités prédites pour le code postal sélectionné
+    # Affichage des probabilités prédites
     st.write(f"Probabilités pour le client avec le code postal {selected_zip_code} :")
-    st.write(y_pred_proba_selected)
+    st.write(predicted_probabilities)
 
 # Déploiement sur Streamlit Sharing
 if __name__ == '__main__':
