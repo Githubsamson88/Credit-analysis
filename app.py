@@ -6,8 +6,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.metrics import accuracy_score, roc_auc_score, roc_curve, jaccard_score, hamming_loss, classification_report
-from catboost import CatBoostClassifier, Pool
+from sklearn.metrics import accuracy_score, roc_auc_score, roc_curve, jaccard_score, hamming_loss, classification_report, auc
 from ngboost import NGBClassifier
 import shap
 import requests
@@ -27,7 +26,13 @@ response = requests.get(github_url)
 data = pd.read_csv(StringIO(response.text))
 
 # Suppression de la colonne 'last_pymnt_d'
-#data.drop('last_pymnt_d', axis=1, inplace=True)
+data.drop('last_pymnt_d', axis=1, inplace=True)
+
+# Affichage des premières lignes et des statistiques descriptives
+st.write("Aperçu des données :")
+st.write(data.head(5))
+st.write("Statistiques descriptives :")
+st.write(data.describe())
 
 # Encodage des variables booléennes
 bool_columns = data.select_dtypes(include=['bool']).columns
@@ -50,17 +55,7 @@ for col in categorical_columns:
 # Suppression des valeurs manquantes
 data = data.dropna()
 
-# Encodage de loan_status
-label_encoder = LabelEncoder()
-data['loan_status'] = label_encoder.fit_transform(data['loan_status'])
-
-# Affichage des statistiques descriptives et des 5 premières lignes
-st.write("Statistiques descriptives :")
-st.write(data.describe())
-st.write("5 premières lignes du jeu de données :")
-st.write(data.head())
-
-# visualisation
+# Visualisation
 # Visualisation 1 : data['annual_inc'].plot()
 st.write("Visualisation 1 : Revenu annuel")
 st.line_chart(data['annual_inc'])
@@ -80,7 +75,6 @@ for i, percentage in enumerate(loan_status_percentages):
 
 plt.show()
 st.pyplot()
-
 
 # Encodage de loan_status
 label_encoder = LabelEncoder()
@@ -120,26 +114,64 @@ st.write("Accuracy :", accuracy_ngboost)
 st.write("Jaccard Score :", jaccard_ngboost)
 st.write("Hamming Loss :", hamming_ngboost)
 
-# Sélection d'un code postal
-selected_zip_code = st.selectbox("Sélectionnez un code postal", data['zip_code'].unique())
+# Évaluation du modèle
+st.write("Évaluation du modèle :")
+st.write(classification_report(y_test, y_pred_ngboost))
+roc_auc = roc_auc_score(y_test, y_pred_proba_ngboost)
+st.write(f'ROC AUC Score: {roc_auc}')
 
-# Probabilités prédites pour le code postal sélectionné
-if st.button("Afficher les probabilités"):
-    # Sélection du code postal
-    selected_zip_code = st.selectbox("Sélectionnez un code postal", data['zip_code'].unique())
+# Obtention des importances des caractéristiques
+feature_importances = model_ngboost.feature_importances_
+feature_importances = feature_importances.ravel()  # ou feature_importances.flatten()
+features = X_train.columns
+coefficients_df = pd.DataFrame({'Feature': features, 'Importance': feature_importances})
+intercept_df = pd.DataFrame({'Feature': ['Intercept'], 'Importance': [model_ngboost.score(X_train, y_train)]})
+coefficients_df = pd.concat([coefficients_df, intercept_df], ignore_index=True)
+st.write(coefficients_df)
 
-    # Filtrer les données pour le code postal sélectionné
-    filtered_data = data[data['zip_code'] == selected_zip_code]
+# Visualisation avec SHAP
+explainer = shap.TreeExplainer(model_ngboost)
+shap_values = explainer.shap_values(X_test)
+shap.initjs()
+shap.force_plot(explainer.expected_value, shap_values[0], X_test.iloc[0, :])
 
-    # Sélection des caractéristiques
-    X_selected = filtered_data.drop('loan_status', axis=1)
+# Courbe ROC
+fpr, tpr, _ = roc_curve(y_test, y_pred_proba_ngboost)
+roc_auc = auc(fpr, tpr)
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc="lower right")
+plt.show()
+st.pyplot()
 
-    # Prédiction des probabilités pour le code postal sélectionné
-    predicted_probabilities = model_ngboost.predict_proba(X_selected)[:, 1]
+# Liste déroulante pour les codes postaux
+st.write("Probabilités pour un client selon le code postal")
+unique_zip_codes = data['zip_code'].unique()
+selected_zip_code = st.selectbox('Sélectionnez un code postal', unique_zip_codes)
 
-    # Affichage des probabilités prédites
-    st.write(f"Probabilités pour le client avec le code postal {selected_zip_code} :")
-    st.write(predicted_probabilities)
+# Filtrer les données pour le code postal sélectionné
+client_data = data[data['zip_code'] == selected_zip_code]
+
+if not client_data.empty:
+    # Normalisation des données du client sélectionné
+    client_data[numerical_cols] = scaler.transform(client_data[numerical_cols])
+    
+    # Créer une liste d'identifiants de clients uniques
+    client_ids = client_data.index.tolist()
+
+    # Prédiction des probabilités pour le client sélectionné
+    client_proba = model_ngboost.predict_proba(client_data.drop('loan_status', axis=1))[:, 1]
+
+    # Affichage des résultats avec les identifiants de client correspondants
+    st.write(f"Probabilités pour les clients avec le code postal {selected_zip_code} :")
+    for client_id, proba in zip(client_ids, client_proba):
+        st.write(f"Client ID {client_id}: Probabilité de défaut de paiement : {proba:.4f}")
 
 # Déploiement sur Streamlit Sharing
 if __name__ == '__main__':
