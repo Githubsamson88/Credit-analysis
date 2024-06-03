@@ -177,6 +177,8 @@ if not client_data.empty:
 
     # Créer un DataFrame à partir des résultats
     results_df = pd.DataFrame(results)
+    # Insérer la colonne "Client ID" au début du DataFrame
+    results_df.insert(0, "Client ID", results_df.pop("Client ID"))
 
     # Afficher le DataFrame
     st.write("Résultats pour les clients avec le code postal sélectionné :")
