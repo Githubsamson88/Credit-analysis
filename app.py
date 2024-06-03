@@ -168,10 +168,11 @@ if not client_data.empty:
     # Prédiction des probabilités pour le client sélectionné
     client_proba = model_ngboost.predict_proba(client_data.drop('loan_status', axis=1))[:, 1]
 
-    # Affichage des résultats avec les identifiants de client correspondants
+    # Affichage des résultats avec les identifiants de client, les codes postaux correspondants et les variables prises en compte
     st.write(f"Probabilités pour les clients avec le code postal {selected_zip_code} :")
-    for client_id, proba in zip(client_ids, client_proba):
-        st.write(f"Client ID {client_id}: Probabilité de défaut de paiement : {proba:.4f}")
+    for client_id, client_proba, client_data_row in zip(client_ids, client_proba, client_data.iterrows()):
+        client_variables = ', '.join([f"{col}: {val}" for col, val in client_data_row[1].items()])
+        st.write(f"Client ID {client_id} (Code postal {selected_zip_code}): Probabilité de défaut de paiement : {client_proba:.4f}, Variables : {client_variables}")
 
 # Déploiement sur Streamlit Sharing
 if __name__ == '__main__':
