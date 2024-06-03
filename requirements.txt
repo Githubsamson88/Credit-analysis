@@ -45,3 +45,4 @@ tzdata==2024.1
 urllib3==2.2.1
 watchdog==4.0.0
 catboost==1.2.5
+ngboost==0.3.13
