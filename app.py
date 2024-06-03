@@ -150,7 +150,10 @@ plt.legend(loc="lower right")
 plt.show()
 st.pyplot()
 
-ap.TreeExplainer(model_ngboost)
+
+
+# Visualisation avec SHAP
+explainer = shap.TreeExplainer(model_ngboost)
 shap_values = explainer.shap_values(X_test)
 shap.initjs()
 shap.force_plot(explainer.expected_value, shap_values[0], X_test.iloc[0, :])
