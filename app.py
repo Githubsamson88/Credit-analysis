@@ -151,7 +151,7 @@ plt.show()
 st.pyplot()
 
 
-
+###
 # Visualisation avec SHAP
 explainer = shap.TreeExplainer(model_ngboost)
 shap_values = explainer.shap_values(X_test)
