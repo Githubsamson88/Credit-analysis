@@ -163,10 +163,12 @@ if not client_data.empty:
     client_data[numerical_cols] = scaler.transform(client_data[numerical_cols])
 
     # Prédiction des probabilités pour les clients sélectionnés
-    client_proba = model_ngboost.predict_proba(client_data.drop('loan_status', axis=1))[:, 1]
+    client_proba = model_ngboost.predict_proba(client_data.drop('loan_status', axis=1))
 
     # Créer un DataFrame pour stocker les résultats
-    results_df = pd.DataFrame({'id': client_data['id'], 'Probabilité de défaut de paiement': client_proba})
+    results_df = pd.DataFrame({'id': client_data['id']})
+    for i, col in enumerate(client_data.drop(['id', 'loan_status'], axis=1).columns):
+        results_df[col] = client_proba[:, i]
 
     # Afficher les résultats pour chaque client
     st.write("Résultats pour les clients avec le code postal sélectionné :")
