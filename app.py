@@ -129,20 +129,6 @@ intercept_df = pd.DataFrame({'Feature': ['Intercept'], 'Importance': [model_ngbo
 coefficients_df = pd.concat([coefficients_df, intercept_df], ignore_index=True)
 st.write(coefficients_df)
 
-# Visualisation avec SHAP
-explainer = shap.TreeExplainer(model_ngboost)
-shap_values = explainer.shap_values(X_test)
-shap.initjs()
-shap.force_plot(explainer.expected_value, shap_values[0], X_test.iloc[0, :])
-
-
-###
-# Visualisation avec SHAP
-explainer = shap.TreeExplainer(model_ngboost)
-shap_values = explainer.shap_values(X_test)
-shap.initjs()
-shap.force_plot(explainer.expected_value, shap_values[0], X_test.iloc[0, :])
-
 # Courbe ROC
 fpr, tpr, _ = roc_curve(y_test, y_pred_proba_ngboost)
 roc_auc = auc(fpr, tpr)
