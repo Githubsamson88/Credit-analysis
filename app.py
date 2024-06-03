@@ -150,6 +150,26 @@ plt.legend(loc="lower right")
 plt.show()
 st.pyplot()
 
+ap.TreeExplainer(model_ngboost)
+shap_values = explainer.shap_values(X_test)
+shap.initjs()
+shap.force_plot(explainer.expected_value, shap_values[0], X_test.iloc[0, :])
+
+# Courbe ROC
+fpr, tpr, _ = roc_curve(y_test, y_pred_proba_ngboost)
+roc_auc = auc(fpr, tpr)
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc="lower right")
+plt.show()
+st.pyplot()
+
 # Liste déroulante pour les codes postaux
 st.write("Probabilités pour un client selon le code postal")
 unique_zip_codes = data['zip_code'].unique()
@@ -159,18 +179,26 @@ selected_zip_code = st.selectbox('Sélectionnez un code postal', unique_zip_code
 client_data = data[data['zip_code'] == selected_zip_code]
 
 if not client_data.empty:
-    # Normalisation des données des clients sélectionnés
+    # Normalisation des données du client sélectionné
     client_data[numerical_cols] = scaler.transform(client_data[numerical_cols])
+    
+    # Créer une liste d'identifiants de clients uniques
+    client_ids = client_data.index.tolist()
 
-    # Prédiction des probabilités pour les clients sélectionnés
-    client_proba = model_ngboost.predict_proba(client_data.drop('loan_status', axis=1))
+    # Prédiction des probabilités pour le client sélectionné
+    client_proba = model_ngboost.predict_proba(client_data.drop('loan_status', axis=1))[:, 1]
 
-    # Créer un DataFrame pour stocker les résultats
-    results_df = pd.DataFrame({'id': client_data['id']})
-    for i, col in enumerate(client_data.drop(['id', 'loan_status'], axis=1).columns):
-        results_df[col] = client_proba[:, i]
+    # Créer une liste de dictionnaires contenant les résultats
+    results = []
+    for client_id, client_proba, client_data_row in zip(client_ids, client_proba, client_data.iterrows()):
+        client_variables = {col: val for col, val in client_data_row[1].items()}
+        client_variables.update({'Client ID': client_id, 'Probabilité de défaut de paiement': client_proba})
+        results.append(client_variables)
 
-    # Afficher les résultats pour chaque client
+    # Créer un DataFrame à partir des résultats
+    results_df = pd.DataFrame(results)
+
+    # Afficher le DataFrame
     st.write("Résultats pour les clients avec le code postal sélectionné :")
     st.write(results_df)
 
